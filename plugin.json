@@ -1,7 +1,7 @@
 {
   "id": "neodex.paint",
   "name": "Paint",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "author": "NDesumeur",
   "description": "Logiciel de dessin : pinceau, gomme, ligne, rectangle, ellipse (pleins ou non), remplissage, pipette, texte et sélection, chacun avec sa lettre au clavier. Annulation sur 40 étapes, zoom, rotation, miroir, recadrage, redimensionnement, 9 filtres et mode net sans lissage. Ouvre une image par glisser-déposer et enregistre en PNG, JPEG ou WebP.",
   "icon": "icon.png",
