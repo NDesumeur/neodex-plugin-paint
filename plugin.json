@@ -10,6 +10,7 @@
   "neobase": ">=4.0.0",
   "type": "app",
   "category": "Outils",
+  "compatibility": ["windows", "linux"],
   "syncMode": "fusion",
   "syncInfo": "Rien : tes dessins sont des fichiers image sur ton PC.",
   "mobile": false,
