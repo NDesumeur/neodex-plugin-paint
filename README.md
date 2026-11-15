@@ -43,3 +43,9 @@ Le plugin ne garde rien lui-même : tes dessins sont des fichiers image sur ton 
 Dans NeoDex : **NeoStore → À découvrir → Paint → Installer**.
 
 Développer un plugin : voir le [SDK NeoDex](https://github.com/NDesumeur/neodex-sdk).
+
+## Calques et collage
+
+Le panneau « Calques » liste les calques, celui du dessus en haut. Clique sur un calque pour dessiner dessus, double-clique pour le renommer, ◉ pour le cacher ; en dessous : nouveau calque, dupliquer, monter, descendre, fusionner avec celui du dessous, supprimer, et l'opacité. Tourner, retourner, recadrer et redimensionner touchent tous les calques ; un filtre touche le calque choisi. L'image enregistrée est la fusion des calques visibles.
+
+Ctrl+V (ou le bouton Coller) ouvre l'image du presse-papiers comme nouvelle image ; Ctrl+Maj+V la colle dans un nouveau calque.

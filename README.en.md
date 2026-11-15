@@ -43,3 +43,9 @@ The plugin keeps nothing itself: your drawings are image files on your PC, where
 In NeoDex: **NeoStore → Discover → Paint → Install**.
 
 Building a plugin: see the [NeoDex SDK](https://github.com/NDesumeur/neodex-sdk).
+
+## Layers and pasting
+
+The « Layers » panel lists the layers, the top one first. Click a layer to draw on it, double-click to rename it, ◉ to hide it; below: new layer, duplicate, move up, move down, merge with the one below, delete, and the opacity. Rotate, flip, crop and resize affect every layer; a filter affects the chosen layer. The saved picture is the merge of the visible layers.
+
+Ctrl+V (or the Paste button) opens the clipboard image as a new picture; Ctrl+Shift+V pastes it into a new layer.
