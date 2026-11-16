@@ -1,9 +1,9 @@
 {
   "pluginId": "neodex.paint",
   "repo": "NDesumeur/neodex-plugin-paint",
-  "version": "1.2.0",
-  "sha256": "55c09819362a8f6b28d0f39e244f5ce0cb3f050677b4eb71a812569ce71bf25e",
-  "approvedAt": "2026-11-16T04:14:38.316Z",
+  "version": "1.2.1",
+  "sha256": "6c1bc2dd6655ca99d71ebc4c524c07c5dabd90f8939c0f9743b125c118ccd138",
+  "approvedAt": "2026-11-16T16:38:50.596Z",
   "neobase": ">=4.0.0",
-  "signature": "XVRByuCAU0T8e1MxoCaVWfopBw5gcRoypwDTlBtl2OOHIcD98eR5b45simW/ERxBpqxVoWKAECtbohCrYf3pBw=="
+  "signature": "6juXe2Tmv0SBlH8NIFkE/wfzm304jZI2+uWCPOVrZ9+EjnBnKT9Ke2zEhClkbvfG6GoCUw+YYasAwux3gO2CDw=="
 }
