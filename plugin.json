@@ -1,7 +1,7 @@
 {
   "id": "neodex.paint",
   "name": "Paint",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "author": "NDesumeur",
   "description": "Logiciel de dessin : pinceau, gomme, ligne, rectangle, ellipse (pleins ou non), remplissage, pipette, texte et sélection, chacun avec sa lettre au clavier. Annulation sur 40 étapes, zoom, rotation, miroir, recadrage, redimensionnement, 9 filtres et mode net sans lissage. Ouvre une image par glisser-déposer et enregistre en PNG, JPEG ou WebP. Calques : ajoute, duplique, cache, monte, descends, fusionne ou supprime des calques, règle leur opacité et renomme-les ; tous les outils dessinent dans le calque choisi. Colle une image du presse-papiers comme nouvelle image (Ctrl+V ou bouton Coller) ou dans un nouveau calque (Ctrl+Maj+V). Nouveau style pixel art : outils avec icônes dessinées, panneaux en cartes, cadre de l'image.",
   "icon": "icon.png",
