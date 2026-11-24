@@ -97,14 +97,14 @@ async function ptSave() {
 }
 // drawing
 const ptPos = e => { const r = ptO.getBoundingClientRect(); return [Math.floor((e.clientX - r.left) / pt.zoom), Math.floor((e.clientY - r.top) / pt.zoom)]; };
-function ptDot(x, y) {
-  const s = pt.size;
+function ptDot(x, y, k = 1) {  // k : la pression du stylet (1 à la souris)
+  const s = Math.max(1, Math.round(pt.size * k * 10) / 10);
   if (pt.pixel) ptX.fillRect(Math.round(x - s / 2 + .5), Math.round(y - s / 2 + .5), s, s);
   else { ptX.beginPath(); ptX.arc(x + .5, y + .5, s / 2, 0, 6.2832); ptX.fill(); }
 }
-function ptStroke(a, b) {  // dots every pixel along the segment: same look in smooth and pixel mode
+function ptStroke(a, b, ka = 1, kb = ka) {  // dots every pixel along the segment: same look in smooth and pixel mode ; la pression passe de ka à kb
   const n = Math.max(Math.abs(b[0] - a[0]), Math.abs(b[1] - a[1]), 1);
-  for (let i = 0; i <= n; i++) ptDot(a[0] + (b[0] - a[0]) * i / n, a[1] + (b[1] - a[1]) * i / n);
+  for (let i = 0; i <= n; i++) ptDot(a[0] + (b[0] - a[0]) * i / n, a[1] + (b[1] - a[1]) * i / n, ka + (kb - ka) * i / n);
 }
 function ptShape(g, tool, a, b) {
   g.save(); g.strokeStyle = g.fillStyle = pt.color; g.lineWidth = pt.size; g.lineCap = 'round'; g.imageSmoothingEnabled = !pt.pixel;
@@ -138,6 +138,7 @@ function ptOverlay(prev) {  // shape preview and the dashed selection box
   ptInfo();
 }
 let ptDrag = null;
+const ptPress = e => e.pointerType === 'pen' ? Math.max(.1, e.pressure || .5) : 1;  // la souris dessine à pleine taille
 ptO.onpointerdown = async e => {
   if (e.button) return;
   const p = ptPos(e), tool = pt.tool;
@@ -150,16 +151,16 @@ ptO.onpointerdown = async e => {
   }
   try { ptO.setPointerCapture(e.pointerId); } catch {}
   if (tool === 'select') { pt.sel = {x: p[0], y: p[1], w: 0, h: 0}; ptDrag = {tool, a: p}; return ptOverlay(); }
-  ptSnap(); ptDrag = {tool, a: p, last: p};
+  ptSnap(); ptDrag = {tool, a: p, last: p, k: ptPress(e)};
   if (tool === 'brush' || tool === 'eraser') {
     ptX.save(); ptX.fillStyle = pt.color; if (tool === 'eraser') ptX.globalCompositeOperation = 'destination-out';
-    ptDot(...p);
+    ptDot(...p, ptDrag.k);
   }
 };
 ptO.onpointermove = e => {
   const p = ptPos(e); ptInfo(p[0], p[1]);
   if (!ptDrag) return;
-  if (ptDrag.tool === 'brush' || ptDrag.tool === 'eraser') { ptStroke(ptDrag.last, p); ptDrag.last = p; }
+  if (ptDrag.tool === 'brush' || ptDrag.tool === 'eraser') { for (const c of e.pointerType === 'pen' && e.getCoalescedEvents ? e.getCoalescedEvents() : [e]) { const q = ptPos(c), k = ptPress(c); ptStroke(ptDrag.last, q, ptDrag.k, k); ptDrag.last = q; ptDrag.k = k; } }
   else if (ptDrag.tool === 'select') { pt.sel.w = p[0] - pt.sel.x; pt.sel.h = p[1] - pt.sel.y; ptOverlay(); }
   else ptOverlay([ptDrag.tool, ptDrag.a, p]);
 };
@@ -263,6 +264,63 @@ $('ptNewBtn').onclick = async () => {
 };
 $('ptOpenBtn').onclick = async () => { if (pt.dirty && !await nbConfirm("L'image actuelle n'est pas enregistrée. En ouvrir une autre ?")) return; const p = await neo.paintPick(); if (p) ptOpenPath(p); };
 $('ptSaveBtn').onclick = ptSave;
+// ---------- OpenRaster (.ora) : un zip avec stack.xml, un PNG par calque, l'image fondue et une vignette ----------
+const ptCrcT = new Uint32Array(256).map((_, n) => { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; return c >>> 0; });
+const ptCrc = b => { let c = ~0; for (const x of b) c = ptCrcT[(c ^ x) & 255] ^ (c >>> 8); return ~c >>> 0; };
+function ptZip(files) {  // sans compression (le PNG l'est déjà) ; « mimetype » d'abord, comme le veut OpenRaster
+  const parts = [], dir = []; let off = 0;
+  for (const [name, b] of files) {
+    const nm = new TextEncoder().encode(name), c = ptCrc(b), h = new DataView(new ArrayBuffer(30)), d = new DataView(new ArrayBuffer(46));
+    [[0, 0x04034b50, 4], [4, 20, 2], [6, 0x800, 2], [14, c, 4], [18, b.length, 4], [22, b.length, 4], [26, nm.length, 2]].forEach(([o, v, n]) => n === 4 ? h.setUint32(o, v, true) : h.setUint16(o, v, true));
+    [[0, 0x02014b50, 4], [4, 20, 2], [6, 20, 2], [8, 0x800, 2], [16, c, 4], [20, b.length, 4], [24, b.length, 4], [28, nm.length, 2], [42, off, 4]].forEach(([o, v, n]) => n === 4 ? d.setUint32(o, v, true) : d.setUint16(o, v, true));
+    parts.push(new Uint8Array(h.buffer), nm, b); dir.push(new Uint8Array(d.buffer), nm); off += 30 + nm.length + b.length;
+  }
+  const size = dir.reduce((a, x) => a + x.length, 0), e = new DataView(new ArrayBuffer(22));
+  e.setUint32(0, 0x06054b50, true); e.setUint16(8, files.length, true); e.setUint16(10, files.length, true); e.setUint32(12, size, true); e.setUint32(16, off, true);
+  return new Blob([...parts, ...dir, new Uint8Array(e.buffer)], {type: 'image/openraster'});
+}
+async function ptUnzip(buf) {  // lit le répertoire central ; entrées sans compression ou en deflate (Krita, GIMP)
+  const u = new Uint8Array(buf), dv = new DataView(buf); let e = u.length - 22; while (e >= 0 && dv.getUint32(e, true) !== 0x06054b50) e--;
+  if (e < 0) throw new Error('ce n\'est pas un fichier .ora'); const out = {}; let p = dv.getUint32(e + 16, true);
+  for (let i = 0, n = dv.getUint16(e + 10, true); i < n; i++) {
+    const meth = dv.getUint16(p + 10, true), csz = dv.getUint32(p + 20, true), nl = dv.getUint16(p + 28, true), xl = dv.getUint16(p + 30, true), cl = dv.getUint16(p + 32, true), lo = dv.getUint32(p + 42, true);
+    const name = new TextDecoder().decode(u.subarray(p + 46, p + 46 + nl)), start = lo + 30 + dv.getUint16(lo + 26, true) + dv.getUint16(lo + 28, true), raw = u.subarray(start, start + csz);
+    out[name] = meth === 8 ? new Uint8Array(await new Response(new Blob([raw]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).arrayBuffer()) : raw;
+    p += 46 + nl + xl + cl;
+  }
+  return out;
+}
+const ptPng = c => new Promise(ok => c.toBlob(b => b.arrayBuffer().then(a => ok(new Uint8Array(a))), 'image/png'));
+const ptXml = v => String(v).replace(/[&<>"]/g, ch => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[ch]));
+async function ptOraBlob() {
+  const files = [['mimetype', new TextEncoder().encode('image/openraster')]], W = ptO.width, H = ptO.height;
+  const stack = [...pt.layers].reverse().map((L, i) => '<layer name="' + ptXml(L.name) + '" src="data/calque' + i + '.png" x="0" y="0" opacity="' + L.opacity + '" visibility="' + (L.visible ? 'visible' : 'hidden') + '"/>').join('');
+  files.push(['stack.xml', new TextEncoder().encode('<?xml version="1.0" encoding="UTF-8"?><image version="0.0.3" w="' + W + '" h="' + H + '"><stack>' + stack + '</stack></image>')]);
+  for (const [i, L] of [...pt.layers].reverse().entries()) files.push(['data/calque' + i + '.png', await ptPng(L.c)]);
+  const flat = ptFlat(), th = document.createElement('canvas'), k = Math.min(1, 256 / Math.max(W, H)); th.width = Math.max(1, Math.round(W * k)); th.height = Math.max(1, Math.round(H * k)); th.getContext('2d').drawImage(flat, 0, 0, th.width, th.height);
+  files.push(['mergedimage.png', await ptPng(flat)], ['Thumbnails/thumbnail.png', await ptPng(th)]);
+  return ptZip(files);
+}
+async function ptOraLoad(buf, name) {
+  const z = await ptUnzip(buf), xml = new DOMParser().parseFromString(new TextDecoder().decode(z['stack.xml'] || new Uint8Array()), 'application/xml'), im = xml.querySelector('image');
+  if (!im) throw new Error('stack.xml absent'); const W = +im.getAttribute('w'), H = +im.getAttribute('h'); if (!(W > 0 && H > 0)) throw new Error('taille absente');
+  const list = [...xml.querySelectorAll('stack > layer')].reverse(), layers = [];  // dans stack.xml, le calque du dessus vient en premier
+  for (const q of list) { const b = z[q.getAttribute('src')]; if (!b) continue; const bmp = await createImageBitmap(new Blob([b], {type: 'image/png'})), L = ptLayer(q.getAttribute('name') || 'Calque', W, H);
+    L.g.drawImage(bmp, +q.getAttribute('x') || 0, +q.getAttribute('y') || 0); L.opacity = q.hasAttribute('opacity') ? +q.getAttribute('opacity') : 1; L.visible = q.getAttribute('visibility') !== 'hidden'; layers.push(L); }
+  if (!layers.length) throw new Error('aucun calque lisible');
+  ptStart(W, H, layers[0].name, g => g.drawImage(layers[0].c, 0, 0)); Object.assign(pt.layers[0], {opacity: layers[0].opacity, visible: layers[0].visible});
+  pt.layers.push(...layers.slice(1)); pt.active = pt.layers.length - 1; pt.file = ''; ptMount(); ptLayers(); $('ptName').textContent = name; return pt.layers.length;
+}
+{
+  const oraIn = Object.assign(document.createElement('input'), {type: 'file', accept: '.ora', hidden: true});
+  oraIn.onchange = async () => { const f = oraIn.files[0]; oraIn.value = ''; if (!f) return; if (pt.dirty && !await nbConfirm("L'image actuelle n'est pas enregistrée. Ouvrir ce fichier ?")) return;
+    try { const n = await ptOraLoad(await f.arrayBuffer(), f.name); toast(f.name + ' ouvert : ' + n + ' calque(s)'); } catch (e) { toast('Impossible d\'ouvrir ce .ora : ' + e.message, true); } };
+  const mk = (t, tip, fn) => { const b = el('button', 'btn px', t); b.title = tip; b.onclick = fn; return b; };
+  $('ptSaveBtn').after(mk('Calques .ora', 'Enregistrer avec tous les calques (OpenRaster : Krita, GIMP, MyPaint)', async () => {
+    const a = el('a'); a.href = URL.createObjectURL(await ptOraBlob()); a.download = ($('ptName').textContent || 'dessin').replace(/\.[^.]+$/, '').replace(/[\\/:*?"<>|]/g, '') + '.ora'; document.body.append(a); a.click(); a.remove(); pt.dirty = false; toast('Calques enregistrés dans Téléchargements (.ora)'); }),
+    mk('Ouvrir .ora', 'Ouvrir un fichier à calques OpenRaster', () => oraIn.click()), oraIn);
+}
+view.__pt = {pt, oraBlob: ptOraBlob, oraLoad: ptOraLoad, unzip: ptUnzip, dot: ptDot, stroke: ptStroke};  // pour le test « local »
 $('ptUndo').onclick = () => ptRestore(pt.undo, pt.redo);
 $('ptRedo').onclick = () => ptRestore(pt.redo, pt.undo);
 $('ptZoomOut').onclick = () => ptZoom(pt.zoom / 1.25); $('ptZoomIn').onclick = () => ptZoom(pt.zoom * 1.25); $('ptZoomFit').onclick = ptFit;

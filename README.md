@@ -4,6 +4,10 @@ Un logiciel de dessin simple : pinceau, gomme, lignes, rectangles, ellipses, rem
 
 *English version: [README.en.md](README.en.md)*
 
+## Stylet et calques .ora (nouveau en 1.3.0)
+
+Le pinceau et la gomme suivent la pression du stylet ; enregistrer et ouvrir les calques au format OpenRaster (.ora : Krita, GIMP, MyPaint).
+
 ## Les outils
 
 Chaque outil a sa lettre au clavier :
@@ -33,6 +37,12 @@ Chaque outil a sa lettre au clavier :
 - **Enregistrer…** (Ctrl+S) : en PNG, JPEG ou WebP. Une image ouverte est proposée sous « nom (modifié).png » pour ne pas écraser l'originale ; un nouveau dessin va dans ton dossier Images.
 
 Le plugin demande confirmation avant de remplacer une image pas encore enregistrée.
+
+## Stylet et fichiers à calques (1.3.0)
+
+- Avec une **tablette graphique**, le pinceau et la gomme suivent la pression du stylet : appuie plus fort pour un trait plus épais. À la souris, rien ne change.
+- **Calques .ora** enregistre l’image avec tous ses calques (noms, opacité, calques cachés) au format OpenRaster, que lisent Krita, GIMP et MyPaint ; le fichier arrive dans Téléchargements.
+- **Ouvrir .ora** rouvre un tel fichier avec ses calques.
 
 ## Données et synchronisation
 

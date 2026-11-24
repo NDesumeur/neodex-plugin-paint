@@ -29,5 +29,19 @@ module.exports = async ({ pj, sleep }) => {
   if (s.n !== 2 || await pj(`[...${T}.pt.layers[1].g.getImageData(240, 310, 1, 1).data].slice(0, 3).join()`) !== '255,208,122') throw new Error('fusion : ' + JSON.stringify(s));
   const over = await pj(`[...document.querySelectorAll('.ptSide *, .ptBar *')].filter(e => e.getBoundingClientRect().right > innerWidth + 1).length`);
   if (over) throw new Error(over + ' élément(s) débordent à droite');
-  return 'coller (image et calque), deux calques, cacher, annuler, fusionner ok';
+  // la pression du stylet (un trait fin puis épais), puis l'aller-retour OpenRaster : les calques, leurs noms, leur opacité et leurs pixels reviennent
+  const ora = await pj(`(async () => { try {
+    const P = document.querySelector('.ptBar').parentElement.__pt, pt = P.pt, g = pt.layers[pt.active].g;
+    g.save(); g.fillStyle = '#000000'; P.stroke([600, 60], [600, 60], .1, .1); g.restore();
+    const thin = [...g.getImageData(596, 56, 9, 9).data].filter((v, i) => i % 4 === 3 && v > 0).length; g.save(); g.fillStyle = '#000000'; P.stroke([700, 60], [700, 60], 1, 1); g.restore();
+    const thick = [...g.getImageData(690, 50, 21, 21).data].filter((v, i) => i % 4 === 3 && v > 0).length; if (!(thick > thin * 3)) return {err: 'pression : ' + thin + ' / ' + thick};
+    pt.layers[1].name = 'Été & ciel'; pt.layers[1].opacity = .5;
+    const want = pt.layers.map(L => L.name + ':' + L.opacity).join('|'), pix = [...pt.layers[1].g.getImageData(240, 310, 1, 1).data].join();
+    const blob = await P.oraBlob(), z = await P.unzip(await blob.arrayBuffer()); if (Object.keys(z)[0] !== 'mimetype' || !z['stack.xml'] || !z['mergedimage.png']) return {err: 'zip : ' + Object.keys(z)};
+    const n = await P.oraLoad(await blob.arrayBuffer(), 'essai.ora'), got = pt.layers.map(L => L.name + ':' + L.opacity).join('|'), pix2 = [...pt.layers[1].g.getImageData(240, 310, 1, 1).data].join();
+    if (got !== want || pix2 !== pix) return {err: 'aller-retour : ' + want + ' → ' + got + ' · ' + pix + ' → ' + pix2};
+    return {n, size: blob.size, ui: document.getElementById('ptLayers').textContent.slice(0, 80)};
+  } catch (e) { return {err: e.message}; } })()`);
+  if (ora.err) throw new Error(ora.err);
+  return 'pression, .ora (' + ora.ui + ' · ' + ora.n + ' calques, ' + Math.round(ora.size / 1024) + ' Ko) · coller (image et calque), deux calques, cacher, annuler, fusionner ok';
 };

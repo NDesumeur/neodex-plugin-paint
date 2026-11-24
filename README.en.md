@@ -4,6 +4,10 @@ A simple drawing program: brush, eraser, lines, rectangles, ellipses, fill, colo
 
 *Version française : [README.md](README.md)*
 
+## Pen and .ora layers (new in 1.3.0)
+
+The brush and eraser follow the pen pressure; save and open layers in the OpenRaster format (.ora: Krita, GIMP, MyPaint).
+
 ## Tools
 
 Each tool has its own key:
@@ -33,6 +37,12 @@ Each tool has its own key:
 - **Save…** (Ctrl+S): as PNG, JPEG or WebP. An opened image is offered as "name (modifié).png" so the original is not overwritten; a new drawing goes to your Pictures folder.
 
 The plugin asks for confirmation before replacing an image that has not been saved yet.
+
+## Pen and layered files (1.3.0)
+
+- With a **graphics tablet**, the brush and eraser follow the pen pressure: press harder for a thicker line. Nothing changes with the mouse.
+- **Layers .ora** saves the picture with all its layers (names, opacity, hidden layers) in the OpenRaster format, read by Krita, GIMP and MyPaint; the file lands in Downloads.
+- **Open .ora** opens such a file again with its layers.
 
 ## Data and sync
 
